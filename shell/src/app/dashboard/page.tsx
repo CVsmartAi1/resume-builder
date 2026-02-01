@@ -1,10 +1,23 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { UserButton, useUser } from '@clerk/nextjs';
 import { CVsList } from '@/components/dashboard/CVsList';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus, Settings, User } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'Dashboard - My Resumes | Resume Builder',
+  description: 'Manage and edit your professional resumes. Create, customize, and download ATS-friendly CVs with our AI-powered builder.',
+  keywords: ['resume dashboard', 'my resumes', 'cv manager', 'resume editor'],
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'Dashboard - My Resumes',
+    description: 'Manage and edit your professional resumes.',
+  },
+};
 
 export default function DashboardPage() {
   const { user, isLoaded } = useUser();
