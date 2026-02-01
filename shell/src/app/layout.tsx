@@ -1,5 +1,7 @@
 import { ClerkProvider } from '@clerk/nextjs';
 import { Inter } from 'next/font/google';
+import { GoogleAnalytics } from '@next/third-parties/google';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -48,10 +50,6 @@ const jsonLd = {
         '@type': 'ImageObject',
         url: 'https://shell-rho-swart.vercel.app/logo.png',
       },
-      sameAs: [
-        'https://twitter.com/resumebuilder',
-        'https://facebook.com/resumebuilder',
-      ],
     },
     {
       '@type': 'WebSite',
@@ -64,6 +62,8 @@ const jsonLd = {
     },
   ],
 };
+
+const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
 export default function RootLayout({
   children,
@@ -89,7 +89,15 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
         </head>
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className}>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </body>
+        
+        {GA_TRACKING_ID && (
+          <GoogleAnalytics gaId={GA_TRACKING_ID} />
+        )}
       </html>
     </ClerkProvider>
   );

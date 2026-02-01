@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { CV, defaultCV, TemplateType } from '@/lib/cv-schema';
 import { cvService, CVServiceError } from '@/lib/services/cv-service';
+import { analytics } from '@/lib/analytics';
 
 interface CVContextType {
   cv: CV;
@@ -202,9 +203,15 @@ export function CVProvider({ children, initialCV, cvId }: CVProviderProps) {
   }, []);
 
   const setTemplate = useCallback((template: TemplateType) => {
+    const prevTemplate = cv.template;
     setCV((prev) => ({ ...prev, template }));
     setHasUnsavedChanges(true);
-  }, []);
+    
+    // Track template change
+    if (prevTemplate !== template) {
+      analytics.templateChanged(prevTemplate, template);
+    }
+  }, [cv.template]);
 
   /**
    * Load a CV from the database
@@ -256,6 +263,7 @@ export function CVProvider({ children, initialCV, cvId }: CVProviderProps) {
           setCV(data);
           setLastSaved(new Date());
           setHasUnsavedChanges(false);
+          analytics.cvUpdated(currentCvId);
           return true;
         }
       } else {
@@ -277,6 +285,9 @@ export function CVProvider({ children, initialCV, cvId }: CVProviderProps) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem(STORAGE_KEY);
           }
+          
+          // Track CV creation
+          analytics.cvCreated(cv.template);
           
           return true;
         }

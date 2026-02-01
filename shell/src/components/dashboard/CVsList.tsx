@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CV, TemplateType } from '@/lib/cv-schema';
 import { cvService } from '@/lib/services/cv-service';
+import { analytics } from '@/lib/analytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -83,6 +84,7 @@ export function CVsList({ className }: CVsListProps) {
       
       if (data) {
         setCvs((prev) => [data, ...prev]);
+        analytics.cvDuplicated(cv.id);
       }
     } finally {
       setDuplicatingId(null);
@@ -100,6 +102,7 @@ export function CVsList({ className }: CVsListProps) {
       }
       
       setCvs((prev) => prev.filter((cv) => cv.id !== id));
+      analytics.cvDeleted(id);
     } finally {
       setDeletingId(null);
     }
