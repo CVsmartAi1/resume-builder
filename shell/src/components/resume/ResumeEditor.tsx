@@ -11,18 +11,96 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, Save, Eye, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Download, Save, Eye, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export function ResumeEditor() {
-  const { cv, updateCV, isSaving, lastSaved, saveCV, hasUnsavedChanges } = useCV();
+interface ResumeEditorProps {
+  cvId?: string;
+}
+
+export function ResumeEditor({ cvId }: ResumeEditorProps) {
+  const { 
+    cv, 
+    updateCV, 
+    isLoading, 
+    isSaving, 
+    lastSaved, 
+    saveCV, 
+    hasUnsavedChanges, 
+    saveError,
+    loadCV,
+    cvId: currentCvId
+  } = useCV();
+  
   const [showPreview, setShowPreview] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const router = useRouter();
+
+  // Load CV if cvId is provided
+  useEffect(() => {
+    if (cvId && cvId !== 'new' && !currentCvId) {
+      loadCV(cvId);
+    }
+  }, [cvId, currentCvId, loadCV]);
+
+  // Handle save with success feedback
+  const handleSave = async () => {
+    const success = await saveCV();
+    
+    if (success) {
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
+      
+      // If we just created a new CV, redirect to edit page with the new ID
+      if (!cvId || cvId === 'new') {
+        const newId = currentCvId;
+        if (newId) {
+          router.push(`/cvs/${newId}`);
+        }
+      }
+    }
+  };
 
   const handleDownloadPDF = () => {
     // PDF download will be implemented
     alert('PDF download coming soon!');
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Skeleton */}
+        <header className="bg-white border-b sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-8 w-48" />
+            </div>
+            <Skeleton className="h-10 w-24" />
+          </div>
+        </header>
+
+        {/* Content Skeleton */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+            <div>
+              <Skeleton className="h-[800px] w-full" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,16 +124,22 @@ export function ResumeEditor() {
           </div>
 
           <div className="flex items-center gap-3">
-            {hasUnsavedChanges && (
+            {/* Save Status */}
+            {showSaveSuccess ? (
+              <span className="text-xs text-green-600 flex items-center gap-1 hidden sm:inline">
+                <CheckCircle className="h-3 w-3" />
+                Saved successfully
+              </span>
+            ) : hasUnsavedChanges ? (
               <span className="text-xs text-amber-600 hidden sm:inline">
                 Unsaved changes
               </span>
-            )}
-            {lastSaved && (
+            ) : lastSaved ? (
               <span className="text-xs text-gray-500 hidden md:inline">
                 Saved {lastSaved.toLocaleTimeString()}
               </span>
-            )}
+            ) : null}
+
             <Button
               variant="outline"
               size="sm"
@@ -75,13 +159,38 @@ export function ResumeEditor() {
               PDF
             </Button>
             
-            <Button size="sm" onClick={saveCV} disabled={isSaving}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save'}
+            <Button 
+              size="sm" 
+              onClick={handleSave} 
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save
+                </>
+              )}
             </Button>
           </div>
         </div>
       </header>
+
+      {/* Error Alert */}
+      {saveError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {saveError.message || 'Failed to save resume. Please try again.'}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

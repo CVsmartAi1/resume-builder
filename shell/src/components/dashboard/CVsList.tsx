@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CV, TemplateType } from '@/lib/cv-schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cvService } from '@/lib/services/cv-service';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -25,29 +27,79 @@ import {
   Layout,
   BookOpen,
   Palette,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { DownloadButton } from '@/lib/pdf-generator';
 
 interface CVsListProps {
-  cvs?: CV[];
-  onDuplicate?: (cv: CV) => void;
-  onDelete?: (id: string) => void;
   className?: string;
 }
 
-export function CVsList({ cvs: initialCvs = [], onDuplicate, onDelete, className }: CVsListProps) {
-  const [cvs, setCvs] = useState<CV[]>(initialCvs);
+export function CVsList({ className }: CVsListProps) {
+  const [cvs, setCvs] = useState<CV[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
-  const handleDuplicate = (cv: CV) => {
-    onDuplicate?.(cv);
+  // Fetch CVs on mount
+  const fetchCVs = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error: fetchError } = await cvService.getUserCVs();
+      
+      if (fetchError) {
+        setError(fetchError.message);
+        return;
+      }
+      
+      setCvs(data);
+    } catch (err) {
+      setError('Failed to load resumes. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCVs();
+  }, [fetchCVs]);
+
+  const handleDuplicate = async (cv: CV) => {
+    if (!cv.id || duplicatingId) return;
+    
+    setDuplicatingId(cv.id);
+    try {
+      const { data, error: duplicateError } = await cvService.duplicateCV(cv.id);
+      
+      if (duplicateError) {
+        setError(duplicateError.message);
+        return;
+      }
+      
+      if (data) {
+        setCvs((prev) => [data, ...prev]);
+      }
+    } finally {
+      setDuplicatingId(null);
+    }
   };
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      await onDelete?.(id);
+      const { success, error: deleteError } = await cvService.deleteCV(id);
+      
+      if (!success) {
+        setError(deleteError?.message || 'Failed to delete resume');
+        return;
+      }
+      
+      setCvs((prev) => prev.filter((cv) => cv.id !== id));
     } finally {
       setDeletingId(null);
     }
@@ -79,6 +131,54 @@ export function CVsList({ cvs: initialCvs = [], onDuplicate, onDelete, className
     return template.charAt(0).toUpperCase() + template.slice(1);
   };
 
+  // Loading skeletons
+  if (isLoading) {
+    return (
+      <div className={cn('space-y-6', className)}>
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="aspect-[4/3] w-full" />
+              <CardContent className="p-4">
+                <Skeleton className="h-5 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-24 mb-4" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Card className={cn('p-12 text-center', className)}>
+        <div className="mx-auto w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Failed to load resumes</h2>
+        <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+          {error}
+        </p>
+        <Button onClick={fetchCVs} variant="outline">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try Again
+        </Button>
+      </Card>
+    );
+  }
+
+  // Empty state
   if (cvs.length === 0) {
     return <EmptyState className={className} />;
   }
@@ -155,9 +255,12 @@ export function CVsList({ cvs: initialCvs = [], onDuplicate, onDelete, className
                         Edit
                       </DropdownMenuItem>
                     </Link>
-                    <DropdownMenuItem onClick={() => handleDuplicate(cv)}>
+                    <DropdownMenuItem 
+                      onClick={() => handleDuplicate(cv)}
+                      disabled={duplicatingId === cv.id}
+                    >
                       <Copy className="h-4 w-4 mr-2" />
-                      Duplicate
+                      {duplicatingId === cv.id ? 'Duplicating...' : 'Duplicate'}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
