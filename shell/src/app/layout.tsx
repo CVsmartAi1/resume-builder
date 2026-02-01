@@ -1,18 +1,12 @@
-import type { Metadata } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
 import { Inter } from 'next/font/google';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata: Metadata = {
-  title: 'Free Resume Builder | AI CV Maker - ATS-Friendly 2025',
-  description: 'Create professional ATS-friendly resumes in minutes with our free AI-powered CV builder. Multiple templates, PDF export, and easy customization.',
-  keywords: ['resume builder', 'cv maker', 'ats-friendly', 'free resume templates', 'ai resume'],
-  openGraph: {
-    title: 'Free Resume Builder | AI CV Maker - ATS-Friendly 2025',
-    description: 'Create professional resumes in minutes with our free AI-powered CV builder.',
-    type: 'website',
-  },
+export const metadata = {
+  title: 'Resume Builder - Create Professional CVs',
+  description: 'Create professional ATS-friendly resumes in minutes with our AI-powered CV builder.',
 };
 
 export default function RootLayout({
@@ -21,8 +15,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
-    </html>
+    <ClerkProvider
+      appearance={{
+        elements: {
+          formButtonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white',
+          footerActionLink: 'text-blue-600 hover:text-blue-700',
+          card: 'bg-white shadow-xl rounded-2xl',
+          headerTitle: 'text-2xl font-bold text-gray-900',
+          headerSubtitle: 'text-gray-600',
+        },
+      }}
+    >
+      <html lang="en">
+        <body className={inter.className}>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

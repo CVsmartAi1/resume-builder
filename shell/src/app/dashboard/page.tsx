@@ -1,11 +1,14 @@
 'use client';
 
+import { UserButton, useUser } from '@clerk/nextjs';
 import { CVsList } from '@/components/dashboard/CVsList';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
+import { Plus, Settings, User } from 'lucide-react';
 
 export default function DashboardPage() {
+  const { user, isLoaded } = useUser();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -14,19 +17,38 @@ export default function DashboardPage() {
           <Link href="/" className="text-xl font-bold text-gray-900">
             Resume Builder
           </Link>
-          <Link href="/cvs/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Resume
-            </Button>
-          </Link>
+          
+          <div className="flex items-center gap-4">
+            <Link href="/cvs/new">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Resume
+              </Button>
+            </Link>
+            
+            <Link href="/settings">
+              <Button variant="ghost" size="icon">
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
+            
+            <Link href="/profile">
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+            
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Resumes</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isLoaded ? `Welcome, ${user?.firstName || 'User'}!` : 'Welcome!'}
+          </h1>
           <p className="text-gray-600 mt-1">Manage and edit your resumes</p>
         </div>
 
