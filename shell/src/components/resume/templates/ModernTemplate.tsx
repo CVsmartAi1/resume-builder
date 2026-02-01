@@ -184,17 +184,17 @@ export function ModernTemplate({ cv }: ModernTemplateProps) {
             <div className="space-y-2 text-sm">
               {personalInfo.email && (
                 <div className="text-slate-600">
-                  <span className="font-medium">Email:\u003c/span> {personalInfo.email}
+                  <span className="font-medium">Email:</span> {personalInfo.email}
                 </div>
               )}
               {personalInfo.phone && (
                 <div className="text-slate-600">
-                  <span className="font-medium">Phone:\u003c/span> {personalInfo.phone}
+                  <span className="font-medium">Phone:</span> {personalInfo.phone}
                 </div>
               )}
               {(personalInfo.address || personalInfo.city || personalInfo.country) && (
                 <div className="text-slate-600">
-                  <span className="font-medium">Address:\u003c/span>{' '}
+                  <span className="font-medium">Address:</span>{' '}
                   {[personalInfo.address, personalInfo.city, personalInfo.country]
                     .filter(Boolean)
                     .join(', ')}

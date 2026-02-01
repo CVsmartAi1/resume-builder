@@ -35,6 +35,7 @@ const STORAGE_KEY = 'cv-draft';
 interface CVProviderProps {
   children: React.ReactNode;
   initialCV?: CV;
+  cvId?: string;
 }
 
 export function CVProvider({ children, initialCV }: CVProviderProps) {

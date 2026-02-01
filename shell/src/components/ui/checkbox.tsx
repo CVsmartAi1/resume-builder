@@ -1,11 +1,28 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CheckboxProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  onCheckedChange?: (checked: boolean) => void;
+}
 
 const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, onCheckedChange, onClick, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      onCheckedChange?.(e.target.checked);
+    };
+
+    const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+      // Toggle the checked state manually for controlled components
+      const target = e.currentTarget;
+      if (props.checked !== undefined) {
+        onCheckedChange?.(!props.checked);
+      }
+      onClick?.(e);
+    };
+
     return (
       <input
         type="checkbox"
@@ -14,6 +31,8 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           className
         )}
         ref={ref}
+        onChange={handleChange}
+        onClick={handleClick}
         {...props}
       />
     );

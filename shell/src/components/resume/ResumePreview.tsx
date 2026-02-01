@@ -1,5 +1,6 @@
 'use client';
 
+import { useCV } from '@/context/cv-context';
 import { CV } from '@/lib/cv-schema';
 import { ModernTemplate } from './templates/ModernTemplate';
 import { ClassicTemplate } from './templates/ClassicTemplate';
@@ -7,12 +8,14 @@ import { CreativeTemplate } from './templates/CreativeTemplate';
 import { cn } from '@/lib/utils';
 
 interface ResumePreviewProps {
-  cv: CV;
+  cv?: CV;
   className?: string;
   scale?: number;
 }
 
-export function ResumePreview({ cv, className, scale = 1 }: ResumePreviewProps) {
+export function ResumePreview({ cv: propCv, className, scale = 1 }: ResumePreviewProps) {
+  const { cv: contextCv } = useCV();
+  const cv = propCv || contextCv;
   const renderTemplate = () => {
     switch (cv.template) {
       case 'classic':
@@ -49,7 +52,7 @@ export function ResumePreviewContainer({
   cv,
   className,
 }: {
-  cv: CV;
+  cv?: CV;
   className?: string;
 }) {
   return (

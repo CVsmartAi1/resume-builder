@@ -30,13 +30,14 @@ import Link from 'next/link';
 import { DownloadButton } from '@/lib/pdf-generator';
 
 interface CVsListProps {
-  cvs: CV[];
+  cvs?: CV[];
   onDuplicate?: (cv: CV) => void;
   onDelete?: (id: string) => void;
   className?: string;
 }
 
-export function CVsList({ cvs, onDuplicate, onDelete, className }: CVsListProps) {
+export function CVsList({ cvs: initialCvs = [], onDuplicate, onDelete, className }: CVsListProps) {
+  const [cvs, setCvs] = useState<CV[]>(initialCvs);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDuplicate = (cv: CV) => {
