@@ -4,11 +4,9 @@ import { useState, useRef } from 'react';
 import { CV } from '@/lib/cv-schema';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Download, Loader2, FileText } from 'lucide-react';
-
-// Note: In a real implementation, you would import:
-// import html2canvas from 'html2canvas';
-// import jsPDF from 'jspdf';
+import { Download, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface PDFGeneratorProps {
   cv: CV;
@@ -33,62 +31,53 @@ export function PDFGenerator({
     setProgress(0);
 
     try {
-      // Simulate PDF generation steps
-      setProgress(25);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Find the preview element
+      const element = previewRef?.current || document.querySelector('[data-resume-preview]') as HTMLElement;
+      
+      if (!element) {
+        console.error('No resume preview element found');
+        return;
+      }
 
-      setProgress(50);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      setProgress(25);
+
+      // Capture the resume as canvas
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
 
       setProgress(75);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Calculate scale to fit A4
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+      
+      // Center the image on the page
+      const x = (pdfWidth - scaledWidth) / 2;
+      const y = (pdfHeight - scaledHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, scaledWidth, scaledHeight);
 
       setProgress(100);
-      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Create a simple text representation for download
-      // In production, use html2canvas + jsPDF or @react-pdf/renderer
-      const content = generateTextContent(cv);
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${cv.personalInfo.firstName}_${cv.personalInfo.lastName}_Resume.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      // Alternative: In production implementation with html2canvas + jsPDF:
-      /*
-      if (previewRef?.current) {
-        const canvas = await html2canvas(previewRef.current, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-        });
-
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        
-        pdf.addImage(
-          imgData,
-          'PNG',
-          0,
-          0,
-          imgWidth * ratio,
-          imgHeight * ratio
-        );
-        
-        pdf.save(`${cv.personalInfo.firstName}_${cv.personalInfo.lastName}_Resume.pdf`);
-      }
-      */
+      // Download
+      const filename = `${cv.personalInfo.firstName || 'Resume'}_${cv.personalInfo.lastName || ''}_CV.pdf`.replace(/\s+/g, '_');
+      pdf.save(filename);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
     } finally {
       setIsGenerating(false);
       setProgress(0);
@@ -138,19 +127,35 @@ export function DownloadButton({
     setIsGenerating(true);
     
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
+      // Create a temporary container for rendering the CV
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '210mm';
+      container.style.background = 'white';
+      document.body.appendChild(container);
+
+      // Import the template component dynamically based on CV template
+      const { ModernTemplate } = await import('@/components/resume/templates/ModernTemplate');
+      const { ClassicTemplate } = await import('@/components/resume/templates/ClassicTemplate');
+      const { CreativeTemplate } = await import('@/components/resume/templates/CreativeTemplate');
+
+      // Render the appropriate template
+      // Note: This is a simplified approach - in a real app, you'd use ReactDOMServer
+      // For now, we'll use text fallback for the list view
       const content = generateTextContent(cv);
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${cv.personalInfo.firstName}_${cv.personalInfo.lastName}_Resume.txt`;
+      link.download = `${cv.personalInfo.firstName || 'Resume'}_${cv.personalInfo.lastName || ''}_Resume.txt`.replace(/\s+/g, '_');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      document.body.removeChild(container);
     } finally {
       setIsGenerating(false);
     }
@@ -163,7 +168,7 @@ export function DownloadButton({
       variant={variant}
       size={size}
       className={cn(className)}
-      title="Download PDF"
+      title="Download Resume"
     >
       {isGenerating ? (
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +179,7 @@ export function DownloadButton({
   );
 }
 
-// Generate text content for download
+// Generate text content for download (fallback)
 function generateTextContent(cv: CV): string {
   const { personalInfo, experience, education, skills } = cv;
   
@@ -194,9 +199,6 @@ function generateTextContent(cv: CV): string {
   if (personalInfo.address || personalInfo.city || personalInfo.country) {
     content += `Address: ${[personalInfo.address, personalInfo.city, personalInfo.country].filter(Boolean).join(', ')}\n`;
   }
-  if (personalInfo.linkedin) content += `LinkedIn: ${personalInfo.linkedin}\n`;
-  if (personalInfo.website) content += `Website: ${personalInfo.website}\n`;
-  if (personalInfo.github) content += `GitHub: ${personalInfo.github}\n`;
   content += '\n';
   
   // Summary
@@ -212,9 +214,7 @@ function generateTextContent(cv: CV): string {
     content += '-'.repeat(30) + '\n';
     experience.forEach((exp) => {
       content += `${exp.position}\n`;
-      content += `${exp.company}`;
-      if (exp.location) content += ` - ${exp.location}`;
-      content += '\n';
+      content += `${exp.company}\n`;
       content += `${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}\n`;
       if (exp.description) content += `${exp.description}\n`;
       content += '\n';
@@ -227,12 +227,8 @@ function generateTextContent(cv: CV): string {
     content += '-'.repeat(30) + '\n';
     education.forEach((edu) => {
       content += `${edu.school}\n`;
-      content += `${edu.degree}`;
-      if (edu.fieldOfStudy) content += ` in ${edu.fieldOfStudy}`;
-      content += '\n';
+      content += `${edu.degree}\n`;
       content += `${edu.startDate} - ${edu.current ? 'Present' : edu.endDate}\n`;
-      if (edu.gpa) content += `GPA: ${edu.gpa}\n`;
-      if (edu.description) content += `${edu.description}\n`;
       content += '\n';
     });
   }
@@ -247,23 +243,49 @@ function generateTextContent(cv: CV): string {
   return content;
 }
 
-// PDF Generator Hook for programmatic use
+// Hook for programmatic PDF generation
 export function usePDFGenerator() {
-  const generate = async (cv: CV): Promise<Blob> => {
-    // Simulate PDF generation
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  const generate = async (cv: CV, element?: HTMLElement): Promise<Blob> => {
+    const targetElement = element || document.querySelector('[data-resume-preview]') as HTMLElement;
     
-    const content = generateTextContent(cv);
-    return new Blob([content], { type: 'text/plain' });
+    if (!targetElement) {
+      throw new Error('No resume element found');
+    }
+
+    const canvas = await html2canvas(targetElement, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const scaledWidth = imgWidth * ratio;
+    const scaledHeight = imgHeight * ratio;
+    
+    const x = (pdfWidth - scaledWidth) / 2;
+    const y = (pdfHeight - scaledHeight) / 2;
+
+    pdf.addImage(imgData, 'PNG', x, y, scaledWidth, scaledHeight);
+
+    return pdf.output('blob');
   };
 
-  const download = async (cv: CV, filename?: string) => {
-    const blob = await generate(cv);
+  const download = async (cv: CV, element?: HTMLElement, filename?: string) => {
+    const blob = await generate(cv, element);
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename || `${cv.personalInfo.firstName}_${cv.personalInfo.lastName}_Resume.txt`;
+    link.download = filename || `${cv.personalInfo.firstName || 'Resume'}_${cv.personalInfo.lastName || ''}_CV.pdf`.replace(/\s+/g, '_');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

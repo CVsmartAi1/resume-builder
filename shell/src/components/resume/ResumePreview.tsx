@@ -30,6 +30,7 @@ export function ResumePreview({ cv: propCv, className, scale = 1 }: ResumePrevie
 
   return (
     <div
+      data-resume-preview
       className={cn(
         'bg-white shadow-lg overflow-hidden',
         className
