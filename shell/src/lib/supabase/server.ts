@@ -9,25 +9,7 @@ export function createClient() {
   const cookieStore = cookies();
 
   if (!supabaseUrl || !supabaseKey) {
-    console.warn('Supabase environment variables not set. Using fallback mode.');
-    return {
-      auth: {
-        getUser: async () => ({ data: { user: null }, error: null }),
-        getSession: async () => ({ data: { session: null }, error: null }),
-      },
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            order: () => ({ data: [], error: null }),
-            single: () => ({ data: null, error: null }),
-          }),
-          order: () => ({ data: [], error: null }),
-        }),
-        insert: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }),
-        update: () => ({ eq: () => ({ select: () => ({ single: () => ({ data: null, error: null }) }) }) }),
-        delete: () => ({ eq: () => ({ error: null }) }),
-      }),
-    } as any;
+    throw new Error('Supabase environment variables not set. Please check your .env.local file.');
   }
 
   return createServerClient<Database>(supabaseUrl, supabaseKey, {
