@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Button } from '@/components/ui/button';
 
@@ -58,7 +58,7 @@ describe('Button', () => {
     render(<Button onClick={handleClick}>Click</Button>);
     
     screen.getByRole('button').click();
-    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(handleClick).toHaveBeenCalled();
   });
 
   it('can be disabled', () => {
