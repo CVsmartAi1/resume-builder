@@ -1,7 +1,5 @@
 import type { Metadata } from 'next';
-import { Hero } from '@/components/landing/Hero';
-import { Features } from '@/components/landing/Features';
-import { CTA } from '@/components/landing/CTA';
+import { Hero, Features, Testimonials, CTA, Footer } from '@/components/landing';
 
 export const metadata: Metadata = {
   title: 'Resume Builder - Create Professional CVs in Minutes | Free AI-Powered',
@@ -57,14 +55,9 @@ export default function Home() {
     <main className="min-h-screen">
       <Hero />
       <Features />
+      <Testimonials />
       <CTA />
-      
-      {/* Simple Footer */}
-      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t bg-gray-50">
-        <div className="max-w-6xl mx-auto text-center text-gray-500">
-          <p>© 2025 Resume Builder. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
